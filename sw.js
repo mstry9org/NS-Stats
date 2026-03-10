@@ -1,32 +1,90 @@
-// --- Nightscout Stats Service Worker ---
-// Version 3 - strips referer/origin and forces fresh network fetches
+/* --- Nightscout Stats Service Worker ---
+   Version 4 - Offline app shell + clean Nightscout fetches
+*/
 
+const CACHE_NAME = "ns-stats-shell-v4";
+
+// Files to precache for offline UI
+const APP_SHELL = [
+  "/",               // Azure rewrites this to index.html
+  "/index.html",
+  "/style.css",
+  "/script.js",
+  "/manifest.json",
+  "/icon-192.png",
+  "/icon-512.png"
+];
+
+// Install: cache the app shell
 self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+  );
   self.skipWaiting();
 });
 
+// Activate: cleanup old caches
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
+    )
+  );
+  self.clients.claim();
 });
 
-// Always fetch from network with no cached headers
+// Fetch handler
 self.addEventListener("fetch", (event) => {
   const req = event.request;
+  const url = new URL(req.url);
 
-  // Only handle GET requests
-  if (req.method !== "GET") return;
+  // --- 1. Handle Nightscout API calls (network only, no referer/origin) ---
+  if (url.pathname.includes("/api/")) {
+    const cleanRequest = new Request(req.url, {
+      method: "GET",
+      headers: new Headers(), // strips referer/origin
+      cache: "no-store",
+      redirect: "follow",
+      mode: "cors",
+      credentials: "omit"
+    });
 
-  // Create a clean request with no referer/origin
-  const cleanRequest = new Request(req.url, {
-    method: "GET",
-    headers: new Headers(), // empty headers = no referer/origin
-    cache: "no-store",
-    redirect: "follow",
-    mode: "cors",
-    credentials: "omit"
-  });
+    event.respondWith(
+      fetch(cleanRequest).catch(() => {
+        // API offline → return empty JSON instead of breaking the UI
+        return new Response("[]", {
+          headers: { "Content-Type": "application/json" }
+        });
+      })
+    );
+    return;
+  }
 
+  // --- 2. App shell files: network-first, fallback to cache ---
   event.respondWith(
-    fetch(cleanRequest).catch(() => fetch(req, { cache: "no-store" }))
+    fetch(req)
+      .then((res) => {
+        // Update cache with fresh version
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+        return res;
+      })
+      .catch(() => {
+        // Offline fallback
+        return caches.match(req).then((cached) => {
+          if (cached) return cached;
+
+          // If request was navigation, return offline index.html
+          if (req.mode === "navigate") {
+            return caches.match("/index.html");
+          }
+
+          return new Response("Offline", { status: 503 });
+        });
+      })
   );
 });
