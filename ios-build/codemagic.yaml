@@ -1,6 +1,6 @@
 workflows:
   ios-testflight:
-    name: iOS TestFlight Build
+    instance_type: mac_mini_m2  # Add this line here
     working_directory: ios-build/ios
     integrations:
       app_store_connect: Codemagic
