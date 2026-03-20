@@ -1,12 +1,12 @@
 /* --- Nightscout Stats Service Worker ---
-   Version 5 - Offline app shell + clean Nightscout fetches
+   Version 6 - Offline app shell + clean Nightscout fetches (fixed)
 */
 
-const CACHE_NAME = "ns-stats-shell-v5";
+const CACHE_NAME = "ns-stats-shell-v6";  // Updated version
 
 // Files to precache for offline UI
 const APP_SHELL = [
-  "/",               // Azure rewrites this to index.html
+  "/",               
   "/index.html",
   "/manifest.json",
   "/icon-192.png",
@@ -40,8 +40,8 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // --- 1. Nightscout API calls (network only, no referer/origin) ---
-  if (url.pathname.includes("/api/")) {
+  // --- 1. ONLY block YOUR DOMAIN's API calls (not Nightscout) ---
+  if (url.origin === location.origin && url.pathname.includes("/api/")) {
     const cleanRequest = new Request(req.url, {
       method: "GET",
       headers: new Headers(), // strips referer/origin
