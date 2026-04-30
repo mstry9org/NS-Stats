@@ -3,9 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <title>Nightscout Stats</title>
-<link rel="icon" href="favicon.ico">
-  <link rel="apple-touch-icon" sizes="180x180" href="icon-512.png">
-  <link rel="icon" type="image/png" href="icon-512.png">
+
   <meta name="viewport"
         content="width=device-width,
                  initial-scale=1.0,
@@ -242,6 +240,7 @@
 
     <div class="row"><div class="label">Time in Range (70–180)</div><div class="value" id="tir">–</div></div>
     <div class="row"><div class="label">Below Range (&lt;70)</div><div class="value" id="tbr">–</div></div>
+		<div class="row"><div class="label" style="padding-left:15px;font-size:0.9em;opacity:0.8;">↳ Critical Low (&lt;54)</div><div class="value" id="tbr54">–</div></div>
     <div class="row"><div class="label">Above Range (&gt;180)</div><div class="value" id="tar">–</div></div>
 
     <button id="btn" onclick="loadStats()">Refresh</button>
@@ -396,17 +395,21 @@
       if (recent.length < 1) return;
 
       const clamp = v => Math.min(280, Math.max(50, v));
-
       const logs = recent.map(p => Math.log(clamp(p.sgv)));
 
-      const minLog = Math.min(...logs);
-      const maxLog = Math.max(...logs);
+      let minLog = Math.min(...logs);
+      let maxLog = Math.max(...logs);
+			
+			const minGap = 0.3; 
+      if ((maxLog - minLog) < minGap) {
+				const center = (maxLog + minLog) / 2;
+				minLog = center - (minGap / 2);
+				maxLog = center + (minGap / 2);
+}
 
       const PAD = 6;
 
-      const scaleY = logVal =>
-        PAD + (height - PAD * 2) -
-        ((logVal - minLog) / (maxLog - minLog)) * (height - PAD * 2);
+      const scaleY = logVal => PAD + (height - PAD * 2) - ((logVal - minLog) / (maxLog - minLog)) * (height - PAD * 2);
 
       const scaleX = (i) =>
         (i / (recent.length - 1)) * width;
@@ -472,6 +475,7 @@
         const total = nums.length;
         const inRange = nums.filter(v => v >= 70 && v <= 180).length;
         const belowRange = nums.filter(v => v < 70).length;
+				const below54 = nums.filter(v => v < 54).length;
         const aboveRange = nums.filter(v => v > 180).length;
 
         document.getElementById("avg").textContent = avg.toFixed(1);
@@ -481,6 +485,7 @@
 
         document.getElementById("tir").textContent = ((inRange / total) * 100).toFixed(1) + "%";
         document.getElementById("tbr").textContent = ((belowRange / total) * 100).toFixed(1) + "%";
+				document.getElementById("tbr54").textContent = ((below54 / total) * 100).toFixed(1) + "%";
         document.getElementById("tar").textContent = ((aboveRange / total) * 100).toFixed(1) + "%";
 
         status.textContent = `Using ${values.length} readings from last ${days} days.`;
