@@ -76,6 +76,7 @@
       background: #2f6fed;
       color: #fff;
       font-weight: 600;
+      display: block;
     }
 
     button:disabled {
@@ -87,6 +88,16 @@
       margin-top: 0.75rem;
       font-size: 0.9rem;
       opacity: 0.8;
+      text-align: left;
+    }
+
+    #graphTitle {
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+      opacity: 0.95;
     }
 
     select, input {
@@ -102,16 +113,14 @@
     #sparkline {
       width: 100%;
       height: 100px;
-      margin-top: 1.5rem;
+      margin-top: 0.5rem;
       display: block;
     }
 
-    /* Bulletproof hidden */
     .hidden {
       display: none !important;
     }
 
-    /* Custom selector */
     .selector-box {
       background: #222;
       padding: 0.6rem;
@@ -132,7 +141,6 @@
       opacity: 0.6;
     }
 
-    /* Modal sheet */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -190,13 +198,11 @@
 
     <h2>Nightscout Server</h2>
 
-    <!-- Custom selector -->
     <div class="selector-box" onclick="openServerModal()">
       <div class="selector-label" id="currentServerLabel">Loading…</div>
       <div class="selector-arrow">▼</div>
     </div>
 
-    <!-- Modal sheet -->
     <div id="serverModal" class="modal-overlay hidden">
       <div class="modal" id="serverModalBox">
         <h3>Select Server</h3>
@@ -235,18 +241,16 @@
     <div class="row"><div class="label">Average BG</div><div class="value" id="avg">–</div></div>
     <div class="row"><div class="label">Estimated A1c</div><div class="value" id="a1c">–</div></div>
     <div class="row"><div class="label">Standard Deviation</div><div class="value" id="sd">–</div></div>
-
     <div class="row"><div class="label">Coefficient of Variation (CV)</div><div class="value" id="cv">–</div></div>
-
     <div class="row"><div class="label">Time in Range (70–180)</div><div class="value" id="tir">–</div></div>
     <div class="row"><div class="label">Above Range (&gt;180)</div><div class="value" id="tar">–</div></div>
     <div class="row"><div class="label">Below Range (&lt;70)</div><div class="value" id="tbr">–</div></div>
-		<div class="row"><div class="label" style="padding-left:15px;font-size:0.9em;opacity:0.8;">↳ Critical Low (&lt;54)</div><div class="value" id="tbr54">–</div></div>
-    
+    <div class="row"><div class="label" style="padding-left:15px;font-size:0.9em;opacity:0.8;">↳ Critical Low (&lt;54)</div><div class="value" id="tbr54">–</div></div>
 
-    <button id="btn" onclick="loadStats()">Refresh</button>
     <div id="status"></div>
+    <button id="btn" onclick="loadStats()">Refresh</button>
 
+    <div id="graphTitle">Last Hour Graph</div>
     <canvas id="sparkline"></canvas>
   </div>
 
@@ -285,12 +289,10 @@
       document.getElementById("serverModal").classList.add("hidden");
     }
 
-    // Close when clicking outside modal box
     document.getElementById("serverModal").addEventListener("click", () => {
       closeServerModal();
     });
 
-    // Prevent closing when clicking inside modal box
     document.getElementById("serverModalBox").addEventListener("click", (e) => {
       e.stopPropagation();
     });
@@ -400,20 +402,17 @@
 
       let minLog = Math.min(...logs);
       let maxLog = Math.max(...logs);
-			
-			const minGap = 0.3; 
+
+      const minGap = 0.3;
       if ((maxLog - minLog) < minGap) {
-				const center = (maxLog + minLog) / 2;
-				minLog = center - (minGap / 2);
-				maxLog = center + (minGap / 2);
-}
+        const center = (maxLog + minLog) / 2;
+        minLog = center - (minGap / 2);
+        maxLog = center + (minGap / 2);
+      }
 
       const PAD = 6;
-
       const scaleY = logVal => PAD + (height - PAD * 2) - ((logVal - minLog) / (maxLog - minLog)) * (height - PAD * 2);
-
-      const scaleX = (i) =>
-        (i / (recent.length - 1)) * width;
+      const scaleX = (i) => (i / (recent.length - 1)) * width;
 
       for (let i = 0; i < recent.length; i++) {
         const p = recent[i];
@@ -437,7 +436,7 @@
       const days = parseInt(document.getElementById("range").value, 10);
 
       btn.disabled = true;
-      status.textContent = `Loading last ${days} days…`;
+      status.textContent = `Using 0 readings from last ${days} days.`;
 
       const { server } = getSelectedServer();
       const BASE_URL = server.url;
@@ -467,30 +466,26 @@
 
         const avg = nums.reduce((a,b) => a + b, 0) / nums.length;
         const a1c = (avg + 46.7) / 28.7;
-
         const variance = nums.reduce((a,b) => a + Math.pow(b - avg, 2), 0) / nums.length;
         const sd = Math.sqrt(variance);
-
         const cv = (sd / avg) * 100;
 
         const total = nums.length;
         const inRange = nums.filter(v => v >= 70 && v <= 180).length;
         const belowRange = nums.filter(v => v < 70).length;
-				const below54 = nums.filter(v => v < 54).length;
+        const below54 = nums.filter(v => v < 54).length;
         const aboveRange = nums.filter(v => v > 180).length;
 
         document.getElementById("avg").textContent = avg.toFixed(1);
         document.getElementById("a1c").textContent = a1c.toFixed(1);
         document.getElementById("sd").textContent = sd.toFixed(1);
         document.getElementById("cv").textContent = cv.toFixed(1) + "%";
-
         document.getElementById("tir").textContent = ((inRange / total) * 100).toFixed(1) + "%";
         document.getElementById("tbr").textContent = ((belowRange / total) * 100).toFixed(1) + "%";
-				document.getElementById("tbr54").textContent = ((below54 / total) * 100).toFixed(1) + "%";
+        document.getElementById("tbr54").textContent = ((below54 / total) * 100).toFixed(1) + "%";
         document.getElementById("tar").textContent = ((aboveRange / total) * 100).toFixed(1) + "%";
 
         status.textContent = `Using ${values.length} readings from last ${days} days.`;
-
         drawSparkline(values);
 
       } catch (e) {
@@ -510,7 +505,7 @@
       renderServerList();
       updateSelectorLabel();
       loadStats();
-      closeServerModal(); // Force hidden on load
+      closeServerModal();
     };
   </script>
 </body>
