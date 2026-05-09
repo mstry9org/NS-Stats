@@ -67,6 +67,18 @@
       font-weight: 600;
     }
 
+    .value.good {
+      color: #00c853;
+    }
+
+    .value.warn {
+      color: #ffca28;
+    }
+
+    .value.bad {
+      color: #ff5252;
+    }
+
     button {
       margin-top: 1rem;
       padding: 0.5rem 1rem;
@@ -230,10 +242,9 @@
 
     <label for="range" style="margin-top:1.5rem;display:block;">Range:</label>
     <select id="range" onchange="loadStats()">
-      <option value="30" selected>30 Days</option>
       <option value="7">7 Days</option>
       <option value="14">14 Days</option>
-      <option value="30">30 Days</option>
+      <option value="30" selected>30 Days</option>
       <option value="60">60 Days</option>
       <option value="90">90 Days</option>
     </select>
@@ -430,6 +441,12 @@
       }
     }
 
+    function setValueColor(id, status) {
+      const el = document.getElementById(id);
+      el.classList.remove("good", "warn", "bad");
+      el.classList.add(status);
+    }
+
     async function loadStats() {
       const btn = document.getElementById("btn");
       const status = document.getElementById("status");
@@ -484,6 +501,15 @@
         document.getElementById("tbr").textContent = ((belowRange / total) * 100).toFixed(1) + "%";
         document.getElementById("tbr54").textContent = ((below54 / total) * 100).toFixed(1) + "%";
         document.getElementById("tar").textContent = ((aboveRange / total) * 100).toFixed(1) + "%";
+
+        setValueColor("avg", (avg >= 70 && avg <= 180) ? "good" : "warn");
+        setValueColor("a1c", (a1c <= 7.0) ? "good" : "warn");
+        setValueColor("sd", (sd <= (avg / 3)) ? "good" : "warn");
+        setValueColor("cv", (cv <= 36) ? "good" : "warn");
+        setValueColor("tir", ((inRange / total) >= 0.70) ? "good" : "warn");
+        setValueColor("tar", ((aboveRange / total) <= 0.25) ? "good" : "warn");
+        setValueColor("tbr", ((belowRange / total) < 0.04) ? "good" : "warn");
+        setValueColor("tbr54", ((below54 / total) < 0.01) ? "good" : "warn");
 
         status.textContent = `Using ${values.length} readings from last ${days} days.`;
         drawSparkline(values);
