@@ -554,61 +554,69 @@
 
   <!-- ⭐ COUNTDOWN SCRIPT ⭐ -->
   <script>
-    const SENSOR_TOKEN = "librelinku-f83757315e2310d9";
-    const SENSOR_DAYS = 15;
+  const sensorEl = document.getElementById("sensor-countdown");
 
-    // Your confirmed working Sensor Start query
-    const SENSOR_URL =
-      "https://mstry9azure.azurewebsites.net/api/v1/treatments" +
-      "?find[created_at][$gte]=2026-04-29T00:00:00Z" +
-      "&find[created_at][$lt]=2026-05-01T00:00:00Z" +
-      "&token=" + SENSOR_TOKEN;
-
-    const sensorEl = document.getElementById("sensor-countdown");
-
-    async function updateSensorCountdown() {
-      try {
-        const res = await fetch(SENSOR_URL);
-        const data = await res.json();
-
-        const t = data.find(x => x.eventType === "Sensor Start");
-
-        if (!t) {
-          sensorEl.textContent = "No Sensor Start found";
-          return;
-        }
-
-        const start = new Date(t.created_at);
-        const expiry = new Date(start.getTime() + SENSOR_DAYS * 86400000);
-        const now = new Date();
-        const diff = expiry - now;
-
-        if (diff <= 0) {
-          sensorEl.textContent = "Sensor expired";
-          return;
-        }
-
-        const sec = Math.floor(diff / 1000);
-        const d = Math.floor(sec / 86400);
-        const h = Math.floor((sec % 86400) / 3600);
-        const m = Math.floor((sec % 3600) / 60);
-        const s = sec % 60;
-
-        sensorEl.textContent =
-          `Sensor ends in ` +
-          `${String(d).padStart(2,"0")}:` +
-          `${String(h).padStart(2,"0")}:` +
-          `${String(m).padStart(2,"0")}:` +
-          `${String(s).padStart(2,"0")}`;
-
-      } catch (e) {
-        sensorEl.textContent = "Error";
-      }
+  async function updateSensorCountdown() {
+    const { server } = getSelectedServer();
+    if (!server || !server.url || !server.token) {
+      sensorEl.textContent = "No server selected";
+      return;
     }
 
-    updateSensorCountdown();
-    setInterval(updateSensorCountdown, 1000);
-  </script>
+    // Fetch ALL treatments (your server only has a few)
+    const SENSOR_URL =
+      `${server.url}/api/v1/treatments.json?count=999999&token=${server.token}`;
+
+    try {
+      const res = await fetch(SENSOR_URL);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      // Your server uses "CGM Sensor Start"
+      const sensorEvents = [
+        "CGM Sensor Start",
+        "Sensor Start",
+        "Sensor Insert",
+        "Sensor Change"
+      ];
+
+      const t = data.find(x => sensorEvents.includes(x.eventType));
+      if (!t) {
+        sensorEl.textContent = "No Sensor Start found";
+        return;
+      }
+
+      const start = new Date(t.created_at);
+      const expiry = new Date(start.getTime() + 15 * 86400000);
+      const now = new Date();
+      const diff = expiry - now;
+
+      if (diff <= 0) {
+        sensorEl.textContent = "Sensor expired";
+        return;
+      }
+
+      const sec = Math.floor(diff / 1000);
+      const d = Math.floor(sec / 86400);
+      const h = Math.floor((sec % 86400) / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+
+      sensorEl.textContent =
+        `Sensor ends in ` +
+        `${String(d).padStart(2,"0")}:` +
+        `${String(h).padStart(2,"0")}:` +
+        `${String(m).padStart(2,"0")}:` +
+        `${String(s).padStart(2,"0")}`;
+
+    } catch (e) {
+      sensorEl.textContent = "Error";
+    }
+  }
+
+  updateSensorCountdown();
+  setInterval(updateSensorCountdown, 1000);
+</script>
 
 </body>
 </html>
