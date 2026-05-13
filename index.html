@@ -201,11 +201,24 @@
       width: 100%;
       margin-top: 1rem;
     }
+
+    /* Countdown styling */
+    #sensor-countdown {
+      font-size: 1.3rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
   </style>
 </head>
 
 <body>
   <div class="card">
+
+    <!-- ⭐ COUNTDOWN INSERTED HERE ⭐ -->
+    <div id="sensor-countdown">Loading…</div>
+
     <h1>Glucose Stats</h1>
 
     <h2>Nightscout Server</h2>
@@ -266,6 +279,8 @@
   </div>
 
   <script>
+    /* --- your entire existing JS stays untouched --- */
+
     const DEFAULT_SERVERS = [
       {
         name: "Add Server Below",
@@ -506,7 +521,7 @@
         setValueColor("a1c", (a1c <= 7.0) ? "good" : "warn");
         setValueColor("sd", (sd <= (avg / 3)) ? "good" : "warn");
         setValueColor("cv", (cv <= 36) ? "good" : "warn");
-        setValueColor("tir", ((inRange / total) >= 0.70) ? "good" : "warn");
+                setValueColor("tir", ((inRange / total) >= 0.70) ? "good" : "warn");
         setValueColor("tar", ((aboveRange / total) <= 0.25) ? "good" : "warn");
         setValueColor("tbr", ((belowRange / total) < 0.04) ? "good" : "warn");
         setValueColor("tbr54", ((below54 / total) < 0.01) ? "good" : "warn");
@@ -534,5 +549,64 @@
       closeServerModal();
     };
   </script>
+
+  <!-- ⭐ COUNTDOWN SCRIPT ⭐ -->
+  <script>
+    const SENSOR_TOKEN = "librelinku-f83757315e2310d9";
+    const SENSOR_DAYS = 15;
+
+    // Your confirmed working Sensor Start query
+    const SENSOR_URL =
+      "https://mstry9azure.azurewebsites.net/api/v1/treatments" +
+      "?find[created_at][$gte]=2026-04-29T00:00:00Z" +
+      "&find[created_at][$lt]=2026-05-01T00:00:00Z" +
+      "&token=" + SENSOR_TOKEN;
+
+    const sensorEl = document.getElementById("sensor-countdown");
+
+    async function updateSensorCountdown() {
+      try {
+        const res = await fetch(SENSOR_URL);
+        const data = await res.json();
+
+        const t = data.find(x => x.eventType === "Sensor Start");
+
+        if (!t) {
+          sensorEl.textContent = "No Sensor Start found";
+          return;
+        }
+
+        const start = new Date(t.created_at);
+        const expiry = new Date(start.getTime() + SENSOR_DAYS * 86400000);
+        const now = new Date();
+        const diff = expiry - now;
+
+        if (diff <= 0) {
+          sensorEl.textContent = "Sensor expired";
+          return;
+        }
+
+        const sec = Math.floor(diff / 1000);
+        const d = Math.floor(sec / 86400);
+        const h = Math.floor((sec % 86400) / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = sec % 60;
+
+        sensorEl.textContent =
+          `Sensor ends in ` +
+          `${String(d).padStart(2,"0")}:` +
+          `${String(h).padStart(2,"0")}:` +
+          `${String(m).padStart(2,"0")}:` +
+          `${String(s).padStart(2,"0")}`;
+
+      } catch (e) {
+        sensorEl.textContent = "Error";
+      }
+    }
+
+    updateSensorCountdown();
+    setInterval(updateSensorCountdown, 1000);
+  </script>
+
 </body>
 </html>
