@@ -40,8 +40,6 @@
       width: calc(100% - 2rem);
       max-width: 600px;
       margin: 1rem auto;
-      /* This moves the whole card down on iPhones with Dynamic Island */
-			padding-top: calc(0.2rem + env(safe-area-inset-top));
     }
 
     h1 {
@@ -553,66 +551,73 @@
   </script>
 
   <!-- ⭐ COUNTDOWN SCRIPT ⭐ -->
-  <script>
-  const sensorEl = document.getElementById("sensor-countdown");
+<script>
+const sensorEl = document.getElementById("sensor-countdown");
 
-  async function updateSensorCountdown() {
-    const { server } = getSelectedServer();
-    if (!server || !server.url || !server.token) {
-      sensorEl.textContent = "No server selected";
-      return;
-    }
-
-    // Fetch ALL treatments (your server only has a few)
-    const SENSOR_URL =
-      `${server.url}/api/v1/treatments.json?count=999999&token=${server.token}`;
-
-    try {
-      const res = await fetch(SENSOR_URL);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-
-      // Your server uses "CGM Sensor Start"
-      const sensorEvents = [
-        "CGM Sensor Start"
-      ];
-
-      const t = data.find(x => sensorEvents.includes(x.eventType));
-      if (!t) {
-        sensorEl.textContent = "No Sensor Start found";
-        return;
-      }
-
-      const start = new Date(t.created_at);
-      const expiry = new Date(start.getTime() + 15 * 86400000);
-      const now = new Date();
-      const diff = expiry - now;
-
-      if (diff <= 0) {
-        sensorEl.textContent = "Sensor expired";
-        return;
-      }
-
-      const sec = Math.floor(diff / 1000);
-      const d = Math.floor(sec / 86400);
-      const h = Math.floor((sec % 86400) / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = sec % 60;
-
-      sensorEl.textContent =
-        `Sensor ends in ` +
-        `${String(d).padStart(2,"0")}:` +
-        `${String(h).padStart(2,"0")}:` +
-        `${String(m).padStart(2,"0")}:` +
-        `${String(s).padStart(2,"0")}`;
-
-    } catch (e) {
-      sensorEl.textContent = "Error";
-    }
+async function updateSensorCountdown() {
+  const { server } = getSelectedServer();
+  if (!server || !server.url || !server.token) {
+    sensorEl.textContent = "No server selected";
+    return;
   }
 
-  updateSensorCountdown();
-  setInterval(updateSensorCountdown, 1000);
+  const SENSOR_URL =
+    `${server.url}/api/v1/treatments.json?count=999999&token=${server.token}`;
+
+  let storedStart = localStorage.getItem("cgmStart");
+
+  try {
+    const res = await fetch(SENSOR_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // Only look for CGM Sensor Start
+    const t = data.find(x => x.eventType === "CGM Sensor Start");
+
+    if (t) {
+      const newStart = new Date(t.created_at).toISOString();
+
+      // Only overwrite if newer
+      if (!storedStart || new Date(newStart) > new Date(storedStart)) {
+        localStorage.setItem("cgmStart", newStart);
+        storedStart = newStart;
+      }
+    }
+  } catch (e) {
+    // Ignore fetch errors; fall back to stored value
+  }
+
+  if (!storedStart) {
+    sensorEl.textContent = "No Sensor Start found";
+    return;
+  }
+
+  const start = new Date(storedStart);
+  const expiry = new Date(start.getTime() + 15 * 86400000);
+  const now = new Date();
+  const diff = expiry - now;
+
+  if (diff <= 0) {
+    sensorEl.textContent = "Sensor expired";
+    return;
+  }
+
+  const sec = Math.floor(diff / 1000);
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+
+  sensorEl.textContent =
+    `Sensor ends in ` +
+    `${String(d).padStart(2,"0")}:` +
+    `${String(h).padStart(2,"0")}:` +
+    `${String(m).padStart(2,"0")}:` +
+    `${String(s).padStart(2,"0")}`;
+}
+
+updateSensorCountdown();
+setInterval(updateSensorCountdown, 1000);
 </script>
 
 </body>
