@@ -40,6 +40,9 @@
       width: calc(100% - 2rem);
       max-width: 600px;
       margin: 1rem auto;
+
+      /* This moves the whole card down on iPhones with Dynamic Island */
+      padding-top: calc(1.0rem + env(safe-area-inset-top));
     }
 
     h1 {
@@ -202,14 +205,19 @@
       margin-top: 1rem;
     }
 
-    /* Countdown styling */
-    #sensor-countdown {
-      font-size: 1.3rem;
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 1rem;
-      color: #fff;
-    }
+		/* Countdown styling */
+		#sensor-countdown {
+		font-size: 1.3rem;
+		font-weight: 700;
+		text-align: center;
+		margin-bottom: 1rem;
+		color: #fff;
+		}
+
+#		/* Push countdown below Dynamic Island */
+#		#sensor-countdown {
+#			padding-top: env(safe-area-inset-top);
+#		}
   </style>
 </head>
 
@@ -619,6 +627,7 @@ async function updateSensorCountdown() {
 updateSensorCountdown();
 setInterval(updateSensorCountdown, 1000);
 </script>
+
 
 </body>
 </html>
