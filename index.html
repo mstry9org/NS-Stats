@@ -569,8 +569,9 @@ async function updateSensorCountdown() {
     return;
   }
 
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString();
   const SENSOR_URL =
-    `${server.url}/api/v1/treatments.json?count=999999&token=${server.token}`;
+    `${server.url}/api/v1/treatments.json?find[eventType]=CGM%20Sensor%20Start&find[created_at][$gte]=${ninetyDaysAgo}&token=${server.token}`;
 
   let storedStart = localStorage.getItem("cgmStart");
 
