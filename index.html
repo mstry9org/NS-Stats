@@ -585,11 +585,9 @@ async function updateSensorCountdown() {
     if (t) {
       const newStart = new Date(t.created_at).toISOString();
 
-      // Only overwrite if newer
-      if (!storedStart || new Date(newStart) > new Date(storedStart)) {
-        localStorage.setItem("cgmStart", newStart);
-        storedStart = newStart;
-      }
+      // Always trust Nightscout over cached value
+      localStorage.setItem("cgmStart", newStart);
+      storedStart = newStart;
     }
   } catch (e) {
     // Ignore fetch errors; fall back to stored value
