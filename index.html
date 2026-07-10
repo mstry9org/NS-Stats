@@ -614,7 +614,7 @@ async function updateSensorCountdown() {
 
   if (d > 0) {
     // More than 1 day left: show only days
-    text += `${d}d`;
+    text += `${d+1}d`;
   } else {
     // Last day: show hours and minutes
     text += `${h}h ${m}m`;
